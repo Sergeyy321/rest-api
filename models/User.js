@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 
 import Joi from "joi";
-import { handleSaveError } from './hooks.js'
+import { handleSaveError } from "./hooks.js";
 const emailRegexp = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const userSchema = new Schema(
   {
@@ -18,7 +18,7 @@ const userSchema = new Schema(
     password: {
       type: String,
       minlenth: 6,
-      required: true,
+      required: [true, "Set password for user"],
     },
     subscription: {
       type: String,
@@ -41,16 +41,20 @@ userSchema.pre("findOneAndUpdate", function (next) {
 userSchema.post("findOneAndUpdate", handleSaveError);
 
 export const userSignupSchema = Joi.object({
-    email: Joi.string().pattern(emailRegexp).required(),
-    password:Joi.string().min(6).required(),
-
-})
+  name: Joi.string().alphanum().min(3).max(30),
+  email: Joi.string()
+    .pattern(emailRegexp)
+    .required()
+    .messages({ "any.required": `"email" is a required field` }),
+  password: Joi.string()
+    .required()
+    .messages({ "any.required": `"password" is a required field` }),
+});
 
 export const userSigninSchema = Joi.object({
-    email: Joi.string().pattern(emailRegexp).required(),
-    password:Joi.string().min(6).required(),
+  email: Joi.string().pattern(emailRegexp).required(),
+  password: Joi.string().min(6).required(),
+});
 
-})
-
-const User = model("user", userSchema)
-export default User
+const User = model("user", userSchema);
+export default User;
