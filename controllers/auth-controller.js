@@ -9,9 +9,17 @@ import path from "path";
 import fs from "fs/promises";
 import "dotenv/config";
 import jimp from "jimp";
-
+import sendEmail from "../helpers/sendEmail.js";
 const avatarsPath = path.resolve("public", "avatars");
-const { JWT_SECRET } = process.env;
+const { JWT_SECRET, BASE_URL } = process.env;
+
+const verify = (email, verificationToken) => {
+  return {
+    to: email,
+    subject: "Veification email",
+    html: `<a target="_blank" href="${BASE_URL}/users/verify/${verificationToken}">please verify your email by clicking the following link</a>`,
+  };
+};
 export const signup = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -20,12 +28,15 @@ export const signup = async (req, res, next) => {
     if (user) {
       throw HttpError(409, "Such email is exist");
     }
+    const verificationToken = nanoid();
     const hashPassword = await bcryptjs.hash(password, 10);
     const newUser = await User.create({
       ...req.body,
       password: hashPassword,
+      verificationToken,
       avatarURL,
     });
+      await sendEmail(verifyEnvelop(email, verificationToken));
     res.status(201).json({
       user: {
         email: newUser.email,
@@ -36,7 +47,47 @@ export const signup = async (req, res, next) => {
     next(error);
   }
 };
+const verifyEmail = async (req, res) => {
+  const { verificationToken } = req.params;
 
+  const user = await User.findOne({ verificationToken });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  await User.updateOne(
+    { verificationToken: user.verificationToken },
+    {
+      verify: true,
+      verificationToken: "",
+    }
+  );
+
+  res.json({
+    message: "Verification successful",
+  });
+};
+
+const repeadVerify = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  if (user.verify) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+
+  await sendEmail(verify(email, user.verificationToken));
+
+  res.json({
+    message: "Verification email sent",
+  });
+};
 export const signin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -94,9 +145,9 @@ export const updateSubscription = async (req, res, next) => {
 
 export const updateAvatar = async (req, res, next) => {
   try {
- 
+
     if (!req.file) {
-      return res.status(401).json({ error: "you are not authtorized" });
+      return res.status(400).json({ error: "something went wrong" });
 }
     const { _id } = req.user;
     const { path: oldPath, filename } = req.file;
@@ -123,4 +174,9 @@ export const getCurrent = async (req, res, next) => {
     subscription,
   });
 };
-export default ctrlWrapper(signout);
+export default {
+ signout: ctrlWrapper(signout),
+verifyEmail: ctrlWrapper(verifyEmail),
+repeadVerify: ctrlWrapper(repeadVerify)
+
+}

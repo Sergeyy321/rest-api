@@ -6,11 +6,15 @@ import {
   signout,
   updateSubscription,
   updateAvatar,
+  repeadVerify,
+  verifyEmail
 } from "../../controllers/auth-controller.js";
 import authenticate from "../../middlewares/authenticate.js";
 import isEmptyBody from "../../middlewares/isEmptyBody.js";
-import { userSignupSchema, userSigninSchema } from "../../models/User.js";
+import { userSignupSchema, userSigninSchema,repeadVerifySchema } from "../../models/User.js";
 import upload from "../../middlewares/upload.js";
+
+import validateBody from "../../decorators/validaterBody.js";
 const authRouter = express.Router();
 authRouter.post(
   "/register",
@@ -18,9 +22,15 @@ authRouter.post(
   validateBody(userSignupSchema),
   signup
 );
-import validateBody from "../../decorators/validaterBody.js";
 authRouter.post("/login", isEmptyBody, validateBody(userSigninSchema), signin);
 
+authRouter.post(
+  "/verify",
+  isEmptyBody,
+  validateBody(repeadUserVerifySchema),
+  repeadVerify
+);
+authRouter.get("/verify/:verificationToken", verifyEmail);
 authRouter.get("/current", authenticate, getCurrent);
 
 authRouter.post("/logout", authenticate, signout);
