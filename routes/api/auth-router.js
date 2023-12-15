@@ -27,7 +27,7 @@ authRouter.post("/login", isEmptyBody, validateBody(userSigninSchema), signin);
 authRouter.post(
   "/verify",
   isEmptyBody,
-  validateBody(repeadUserVerifySchema),
+  validateBody(repeadVerifySchema),
   repeadVerify
 );
 authRouter.get("/verify/:verificationToken", verifyEmail);

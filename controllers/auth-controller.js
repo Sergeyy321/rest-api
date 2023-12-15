@@ -47,46 +47,56 @@ export const signup = async (req, res, next) => {
     next(error);
   }
 };
-const verifyEmail = async (req, res) => {
-  const { verificationToken } = req.params;
-
-  const user = await User.findOne({ verificationToken });
-
-  if (!user) {
-    throw HttpError(404, "User not found");
-  }
-
-  await User.updateOne(
-    { verificationToken: user.verificationToken },
-    {
-      verify: true,
-      verificationToken: "",
+export const verifyEmail = async (req, res) => {
+    try {
+ 
+      const { verificationToken } = req.params;
+    
+      const user = await User.findOne({ verificationToken });
+    
+      if (!user) {
+        throw HttpError(404, "User not found");
+      }
+    
+      await User.updateOne(
+        { verificationToken: user.verificationToken },
+        {
+          verify: true,
+          verificationToken: "",
+        }
+      );
+    
+      res.json({
+        message: "Verification successful",
+      });
+    } catch (error) {
+      next(error);
     }
-  );
-
-  res.json({
-    message: "Verification successful",
-  });
 };
 
-const repeadVerify = async (req, res) => {
-  const { email } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    throw HttpError(404, "User not found");
-  }
-
-  if (user.verify) {
-    throw HttpError(400, "Verification has already been passed");
-  }
-
-  await sendEmail(verify(email, user.verificationToken));
-
-  res.json({
-    message: "Verification email sent",
-  });
+export const repeadVerify = async (req, res) => {
+    try {
+      
+      const { email } = req.body;
+    
+      const user = await User.findOne({ email });
+    
+      if (!user) {
+        throw HttpError(404, "User not found");
+      }
+    
+      if (user.verify) {
+        throw HttpError(400, "Verification has already been passed");
+      }
+    
+      await sendEmail(verify(email, user.verificationToken));
+    
+      res.json({
+        message: "Verification email sent",
+      });
+    } catch (error) {
+      next(error);
+    }
 };
 export const signin = async (req, res, next) => {
   try {
