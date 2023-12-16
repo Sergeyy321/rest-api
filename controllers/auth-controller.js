@@ -41,6 +41,7 @@ export const signup = async (req, res, next) => {
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        verificationToken:newUser.verificationToken,
       },
     });
   } catch (error) {
