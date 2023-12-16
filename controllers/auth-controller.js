@@ -12,7 +12,7 @@ import jimp from "jimp";
 import sendEmail from "../helpers/sendEmail.js";
 const avatarsPath = path.resolve("public", "avatars");
 const { JWT_SECRET, BASE_URL } = process.env;
-
+import { nanoid } from "nanoid";
 const verify = (email, verificationToken) => {
   return {
     to: email,
@@ -36,7 +36,7 @@ export const signup = async (req, res, next) => {
       verificationToken,
       avatarURL,
     });
-      await sendEmail(verifyEnvelop(email, verificationToken));
+      await sendEmail(verify(email, verificationToken));
     res.status(201).json({
       user: {
         email: newUser.email,
@@ -47,56 +47,52 @@ export const signup = async (req, res, next) => {
     next(error);
   }
 };
-export const verifyEmail = async (req, res) => {
-    try {
- 
-      const { verificationToken } = req.params;
+export const verifyEmail = async (req, res,next) => {
+  try {
     
-      const user = await User.findOne({ verificationToken });
-    
-      if (!user) {
-        throw HttpError(404, "User not found");
-      }
-    
-      await User.updateOne(
-        { verificationToken: user.verificationToken },
-        {
-          verify: true,
-          verificationToken: "",
-        }
-      );
-    
-      res.json({
-        message: "Verification successful",
-      });
-    } catch (error) {
-      next(error);
+    const { verificationToken } = req.params;
+  
+    const user = await User.findOne({ verificationToken });
+  
+    if (!user) {
+      throw HttpError(404, "User not found");
     }
+  
+    await User.updateOne(
+      { verificationToken: user.verificationToken },
+      {
+        verify: true,
+        verificationToken: "",
+      }
+    );
+  
+    res.json({
+      message: "Verification successful",
+    });
+  }
+  catch (error) {
+    next(error)
+  }
 };
 
 export const repeadVerify = async (req, res) => {
-    try {
-      
-      const { email } = req.body;
-    
-      const user = await User.findOne({ email });
-    
-      if (!user) {
-        throw HttpError(404, "User not found");
-      }
-    
-      if (user.verify) {
-        throw HttpError(400, "Verification has already been passed");
-      }
-    
-      await sendEmail(verify(email, user.verificationToken));
-    
-      res.json({
-        message: "Verification email sent",
-      });
-    } catch (error) {
-      next(error);
-    }
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  if (user.verify) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+
+  await sendEmail(verify(email, user.verificationToken));
+
+  res.json({
+    message: "Verification email sent",
+  });
 };
 export const signin = async (req, res, next) => {
   try {
@@ -186,7 +182,6 @@ export const getCurrent = async (req, res, next) => {
 };
 export default {
  signout: ctrlWrapper(signout),
-verifyEmail: ctrlWrapper(verifyEmail),
-repeadVerify: ctrlWrapper(repeadVerify)
+
 
 }
