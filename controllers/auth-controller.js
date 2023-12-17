@@ -139,29 +139,41 @@ export const signin = async (req, res, next) => {
 };
 
 export const signout = async (req, res, next) => {
-  const { _id } = req.user;
-  await User.findByIdAndUpdate(_id, { token: " " });
-  res.status(204).json({
-    message: "No content",
-  });
+  try {
+    const { _id } = req.user;
+    await User.findByIdAndUpdate(_id, { token: " " });
+    res.status(204).json({
+      message: "No content",
+    });
+    
+  }
+  catch (error) {
+    next(error)
+  }
 };
 
 export const updateSubscription = async (req, res, next) => {
-  const { subscription } = req.body;
-  const { token } = req.user;
-
-  const { id } = jsonwebtoken.verify(token, JWT_SECRET);
-
-  const updateUser = await User.findByIdAndUpdate(
-    id,
-    { subscription },
-    { new: true, runValidators: true }
-  );
-  if (!updateUser) {
-    throw HttpError(404, "User not found");
+  try {
+    
+    const { subscription } = req.body;
+    const { token } = req.user;
+  
+    const { id } = jsonwebtoken.verify(token, JWT_SECRET);
+  
+    const updateUser = await User.findByIdAndUpdate(
+      id,
+      { subscription },
+      { new: true, runValidators: true }
+    );
+    if (!updateUser) {
+      throw HttpError(404, "User not found");
+    }
+  
+    res.status(200).json(updateUser);
   }
-
-  res.status(200).json(updateUser);
+  catch (error) {
+    next(error)
+  }
 };
 
 export const updateAvatar = async (req, res, next) => {
@@ -188,12 +200,18 @@ export const updateAvatar = async (req, res, next) => {
   }
 };
 export const getCurrent = async (req, res, next) => {
-  const { email, subscription } = req.user;
-
-  res.json({
-    email,
-    subscription,
-  });
+  try {
+    const { email, subscription } = req.user;
+  
+    res.json({
+      email,
+      subscription,
+    });
+    
+  }
+  catch (error) {
+    next(error)
+  }
 };
 export default {
  signout: ctrlWrapper(signout),
