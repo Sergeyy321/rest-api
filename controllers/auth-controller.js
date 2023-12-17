@@ -77,25 +77,34 @@ export const verifyEmail = async (req, res,next) => {
   }
 };
 
-export const repeadVerify = async (req, res) => {
-  const { email } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    throw HttpError(404, "User not found");
+export const repeadVerify = async (req, res,next) => {
+  try {
+    
+    const { email } = req.body;
+  
+    const user = await User.findOne({ email });
+  
+    if (!user) {
+      throw HttpError(404, "User not found");
+    }
+  
+      if (user.verify) {
+        throw HttpError(400, "Verification has already been passed");
+        
+      }
+    
+    await sendEmail(verify(email, user.verificationToken));
+  
+    res.json({
+      message: "Verification email sent",
+    });
   }
-
-  if (user.verify) {
-    throw HttpError(400, "Verification has already been passed");
+  catch (error) {
+    next(error)
   }
-
-  await sendEmail(verify(email, user.verificationToken));
-
-  res.json({
-    message: "Verification email sent",
-  });
 };
+
+
 export const signin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -103,6 +112,10 @@ export const signin = async (req, res, next) => {
     if (!user) {
       throw HttpError(401, "Email or password invalid");
     }
+     if (!user.verify) {
+       throw HttpError(401, "Email not verify");
+     }
+
     const passwordCompare = await bcryptjs.compare(password, user.password);
     if (!passwordCompare) {
       throw HttpError(401, "Email or password invalid");
@@ -184,6 +197,4 @@ export const getCurrent = async (req, res, next) => {
 };
 export default {
  signout: ctrlWrapper(signout),
-
-
 }
